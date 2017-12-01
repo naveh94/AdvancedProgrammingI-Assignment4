@@ -25,6 +25,22 @@ Board::Board(int height, int width)
     }
 }
 
+Board::Board(Board *src)
+{
+    this->height = src->getHeight();
+    this->width = src->getWidth();
+    this->board = new Block**[height + 2];
+    for (int i = 0; i < height + 2; i++)
+    {
+        this->board[i] = new Block*[width + 2];
+        for (int j = 0; j < width + 2; j++)
+        {
+            this->board[i][j] = new Block(i,j);
+            this->board[i][j]->setMark(src->getMark(i,j));
+        }
+    }
+}
+
 Board::~Board()
 {
    for (int i = 0; i < height + 2; i++)
@@ -71,8 +87,8 @@ ostream &operator <<(ostream &out, const Board &bor)
 
 char Board::markToChar(int mark) const
 {
-    if (mark == 1) return 'O';
-    if (mark == -1) return 'X';
+    if (mark == WHITE_PLAYER) return 'O';
+    if (mark == BLACK_PLAYER) return 'X';
     return ' ';
 }
 

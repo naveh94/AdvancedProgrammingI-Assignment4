@@ -1,16 +1,24 @@
 #include "../include/Game.h"
+#include "../include/Ai.h"
 
 Game::Game()
 {
     int width = DEFAULT_WIDTH;
     int height = DEFAULT_HEIGHT;
     board = new Board(width,height);
-    board->setMark(width / 2 , height / 2 + 1, PLAYER_X);
-    board->setMark(width / 2 + 1, height / 2, PLAYER_X);
-    board->setMark(width / 2 , height / 2, PLAYER_O);
-    board->setMark(width / 2  + 1, height / 2 + 1, PLAYER_O);
-    current_turn = PLAYER_X;
+    board->setMark(width / 2 , height / 2 + 1, BLACK_PLAYER);
+    board->setMark(width / 2 + 1, height / 2, BLACK_PLAYER);
+    board->setMark(width / 2 , height / 2, WHITE_PLAYER);
+    board->setMark(width / 2  + 1, height / 2 + 1, WHITE_PLAYER);
+    current_turn = BLACK_PLAYER;
     this->current_available_moves.reserve(width * height);
+}
+
+Game::Game(Game *src)
+{
+    board = new Board(src->getBoard());
+    current_turn = src->getTurn();
+    this->current_available_moves.reserve(board->getWidth() * board->getHeight());
 }
 
 Game::~Game()
@@ -23,14 +31,6 @@ ostream &operator <<(ostream &out, const Game &game)
     return out;
 }
 
-/**
- * Check if move (x,y) is a valid move for current player.
- * If it is, will return the sum of enemy blocks taken during this play.
- * @param x parameter x
- * @param y parameter y
- * @return 0 if no valid move. Else will return the amount of coins would be
- * flipped during this play.
- */
 int Game::isValidMove(int x, int y)
 {
     int sum = 0,temp;
@@ -73,11 +73,6 @@ int Game::isValidMove(int x, int y)
     return sum;
 }
 
-/**
- * Run all over the board, checking for all available moves for current player.
- * Updates the current_available_moves vector.
- * @return the maximum of coins that can be flipped during this move.
- */
 int Game::availableMoves()
 {
     vector<Point> temp_v;
@@ -100,13 +95,6 @@ int Game::availableMoves()
     return temp_max;
 }
 
-/**
- * Check upper direction, in vertical line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkNorth(int x, int y, int flip)
 {
     // If there is a blank block or border block on the side checked:
@@ -132,13 +120,6 @@ int Game::checkNorth(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Check upper right direction, in diagonal line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkNorthEast(int x, int y, int flip)
 {
     if (board->getMark(x + 1, y - 1) == BLANK || board->getMark(x + 1, y - 1) == BORDER)
@@ -157,13 +138,6 @@ int Game::checkNorthEast(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Check right direction, in horizontal line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkEast(int x, int y, int flip)
 {
     if (board->getMark(x + 1, y) == BLANK || board->getMark(x + 1, y) == BORDER)
@@ -182,13 +156,6 @@ int Game::checkEast(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Check lower-right direction, in diagonal line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkSouthEast(int x, int y, int flip)
 {
     if (board->getMark(x + 1, y + 1) == BLANK || board->getMark(x + 1, y + 1) == BORDER)
@@ -207,13 +174,6 @@ int Game::checkSouthEast(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Check lower direction, in vertical line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkSouth(int x, int y, int flip)
 {
     if (board->getMark(x, y + 1) == BLANK || board->getMark(x, y + 1) == BORDER)
@@ -232,13 +192,6 @@ int Game::checkSouth(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Check lower-left direction, in diagonal line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkSouthWest(int x, int y, int flip)
 {
     if (board->getMark(x - 1, y + 1) == BLANK || board->getMark(x - 1, y + 1) == BORDER)
@@ -257,13 +210,6 @@ int Game::checkSouthWest(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Check left direction, in horizontal line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkWest(int x, int y, int flip)
 {
     if (board->getMark(x - 1, y) == BLANK || board->getMark(x - 1, y) == BORDER)
@@ -282,13 +228,6 @@ int Game::checkWest(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Check upper-left direction, in diagonal line.
- * @param x block checked
- * @param y block checked
- * @param flip should flip found coins, or just checking if move available
- * @return the amount of coins flippable (or flipped) found.
- */
 int Game::checkNorthWest(int x, int y, int flip)
 {
     if (board->getMark(x - 1, y - 1) == BLANK || board->getMark(x - 1, y - 1) == BORDER)
@@ -307,13 +246,6 @@ int Game::checkNorthWest(int x, int y, int flip)
     return flippables;
 }
 
-/**
- * Play one turn with given parameters. If given parameters are not a valid move,
- * returns 0.
- * @param x
- * @param y
- * @return
- */
 int Game::playTurn(int x, int y)
 {
     if (!this->isValidMove(x, y))
@@ -332,13 +264,14 @@ int Game::playTurn(int x, int y)
     return TRUE;
 }
 
-/**
- * Start a session of gameplay, which ends when both players don't have any moves left.
- * @return 1 if player O won, -1 if player X won, and 0 if there is a tie.
- */
-int Game::gamePlay()
+int Game::gamePlay(int is_multiplayer)
 {
+    Ai comp_player = Ai(this);
     int max_flippable, x, y, is_move_played, players_without_turns = 0;
+    if (!is_multiplayer)
+    {
+
+    }
     while (TRUE)
     {
         cout << "current board:" << endl << *this << endl;
@@ -359,39 +292,50 @@ int Game::gamePlay()
             continue;
         }
         // If there are available moves for one of the players, reset counter.
-        players_without_turns == 0;
-        // Prints all available moves:
-        cout << "You got " << this->current_available_moves.size() << " available Moves: " << endl;
-        for (int i = 0; i < this->current_available_moves.size(); i++)
+        players_without_turns = 0;
+
+        // For player X on both multiplayer and signleplayer, and for player O on multiplayer:
+        if ((is_multiplayer && this->current_turn == WHITE_PLAYER) || this->current_turn == BLACK_PLAYER)
         {
-            cout << this->current_available_moves.at(i);
-            if (i < this->current_available_moves.size() - 1)
+            // Prints all available moves:
+            cout << "You got " << this->current_available_moves.size() << " available Moves: " << endl;
+            for (int i = 0; i < this->current_available_moves.size(); i++)
             {
-                cout << ", ";
+                cout << this->current_available_moves.at(i);
+                if (i < this->current_available_moves.size() - 1)
+                {
+                    cout << ", ";
+                }
             }
+            cout << endl << "Enter your move x,y:" << endl;
+            do
+            {
+                cin >> x >> y;
+                is_move_played = this->playTurn(x,y);
+                if (is_move_played == FALSE)
+                {
+                    cout << "Move not available. Please enter another move x,y:" << endl;
+                }
+            } while (is_move_played == FALSE);
         }
-        cout << endl << "Enter your move x,y:" << endl;
-        do
+            // For player O on singleplayer:
+        else
         {
-            cin >> x >> y;
-            is_move_played = this->playTurn(x,y);
-            if (is_move_played == FALSE)
+            if (comp_player.calculateBestMove(this->current_available_moves))
             {
-                cout << "Move not available. Please enter another move x,y:" << endl;
+                cout << "error passing available moves to AI" << endl;
+                return 1;
             }
-        } while (is_move_played == FALSE);
+            playTurn(comp_player.getX(), comp_player.getY());
+            cout << "Player O played " << Point(comp_player.getX(), comp_player.getY()) << "." << endl;
+        }
+
         this->switchTurn();
     }
     cout << "No moves left for both players. Game Over!" << endl;
     return gameOver();
 }
 
-
-/**
- * Determine who won by counting all the blocks on the board,
- * and announce it.
- * @return 1 if Player O won, -1 if Player X won, and 0 if there is a tie.
- */
 int Game::gameOver()
 {
     int player_O = 0, player_X = 0;
@@ -399,11 +343,11 @@ int Game::gameOver()
     {
         for (int j = 1; j <= board->getWidth(); j++)
         {
-            if (board->getMark(i,j) == PLAYER_O)
+            if (board->getMark(i,j) == WHITE_PLAYER)
             {
                 player_O++;
             }
-            if (board->getMark(i,j)== PLAYER_X)
+            if (board->getMark(i,j)== BLACK_PLAYER)
             {
                 player_X++;
             }
@@ -412,15 +356,37 @@ int Game::gameOver()
     if (player_O > player_X)
     {
         cout << "Player O wins with " << player_O << " squares taken!" << endl;
-        return PLAYER_O;
+        return WHITE_PLAYER;
     }
     if (player_X > player_O)
     {
         cout << "Player X wins with " << player_X << " squares taken!" << endl;
-        return PLAYER_X;
+        return BLACK_PLAYER;
     }
     cout << "The game ends with a tie. Both players got " << player_O << " squares taken." << endl;
     return 0;
 }
 
+int Game::getCurrentScore(int player)
+{
+    int white_player_coins = 0, black_player_coins = 0, white_player_score, black_player_score;
+    for (int i = 1; i <= board->getHeight(); i++)
+    {
+        for (int j = 1; j <= board->getWidth(); j++)
+        {
+            if (board->getMark(i,j) == WHITE_PLAYER)
+            {
+                white_player_coins++;
+            }
+            if (board->getMark(i,j)== BLACK_PLAYER)
+            {
+                black_player_coins++;
+            }
+        }
+    }
+    black_player_score = black_player_coins - white_player_coins;
+    white_player_score = white_player_coins - black_player_coins;
+    // If given player is Black Player, returns his score, else returns white player score.
+    return (player == BLACK_PLAYER) ? black_player_score : white_player_score;
+}
 
