@@ -1,3 +1,9 @@
+/**
+ * @name: Naveh Marchoom
+ * @exercise: Ex3
+ * @ID: 312275746
+ */
+
 #include <iostream>
 #include "include/Game.h"
 
